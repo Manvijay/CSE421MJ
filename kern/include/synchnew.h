@@ -77,7 +77,7 @@ struct lock {
         struct wchan *lk_wchan;
         struct spinlock lk_lock;
         volatile unsigned lk_count;
-	    struct thread *lk_thread;
+	struct thread *lk_thread;
         // (don't forget to mark things volatile as needed)
 };
 
@@ -118,8 +118,9 @@ struct cv {
         char *cv_name;
 	struct wchan *cv_wchan;
 	struct lock *cv_lock;
-	 struct thread *cv_thread;
+	struct thread *cv_thread;
 	volatile unsigned cv_count;
+	struct spinlock cv_splock;
 	// again, not sure what we need here and what is made redundant by creating the lock
         // add what you need here
         // (don't forget to mark things volatile as needed)
