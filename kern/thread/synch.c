@@ -153,7 +153,6 @@ lock_create(const char *name)
 		kfree(lock);
 		return NULL;
 	}
-<<<<<<< HEAD
 // this is where we started
 
 	lock->lk_wchan = wchan_create(lock->lk_name); // create wait channel
@@ -166,13 +165,11 @@ lock_create(const char *name)
         spinlock_init(&lock->lk_lock); // initialize spinlock
 	lock->lk_thread = NULL;
 	lock->lk_count = 0; // set lock count to 0, lock is not in use
-=======
 
 	HANGMAN_LOCKABLEINIT(&lock->lk_hangman, lock->lk_name);
 
 	// add stuff here as needed
 
->>>>>>> 398e4eb90a75871d9cffa8144492a3c3897c10e5
 	return lock;
 }
 
@@ -182,7 +179,7 @@ lock_destroy(struct lock *lock)
 	KASSERT(lock != NULL);
 	KASSERT(lock->lk_count == 0); // ensure lock is not currently acquired
 // this is where we started
-        
+        HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
         spinlock_cleanup(&lock->lk_lock);
         wchan_destroy(lock->lk_wchan);
 	    kfree(lock->lk_name);
@@ -192,9 +189,9 @@ lock_destroy(struct lock *lock)
 void
 lock_acquire(struct lock *lock)
 {
-<<<<<<< HEAD
 // this is where we started
 
+	HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
         KASSERT(lock != NULL);
 	spinlock_acquire(&lock->lk_lock);
 	while (lock->lk_count == 1)   // if lock is in use
@@ -205,33 +202,26 @@ lock_acquire(struct lock *lock)
 	lock->lk_count = 1;
 	lock->lk_thread = curthread;
 	spinlock_release(&lock->lk_lock);
-	}
+	
 
 	//(void)lock;  // suppress warning until code gets written
 
-=======
 	/* Call this (atomically) before waiting for a lock */
 	//HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
 
 	// Write this
 
-	(void)lock;  // suppress warning until code gets written
 
 	/* Call this (atomically) once the lock is acquired */
-	//HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
+	HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
 }
->>>>>>> 398e4eb90a75871d9cffa8144492a3c3897c10e5
 
 void
 lock_release(struct lock *lock)
 {
-<<<<<<< HEAD
-=======
 	/* Call this (atomically) when the lock is released */
-	//HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
 
 	// Write this
->>>>>>> 398e4eb90a75871d9cffa8144492a3c3897c10e5
 
 // this is where we started
 
@@ -242,6 +232,7 @@ lock_release(struct lock *lock)
 	lock->lk_thread = NULL;
 	wchan_wakeone(lock->lk_wchan, &lock->lk_lock); // wake first thread in wait channel
 	spinlock_release(&lock->lk_lock);
+	HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
 	// (void)lock;  // suppress warning until code gets written
 }
 
