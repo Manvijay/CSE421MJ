@@ -78,8 +78,6 @@ struct lock {
         struct spinlock lk_lock;
         volatile unsigned lk_count;
 	struct thread *lk_thread;
-        HANGMAN_LOCKABLE(lk_hangman);   /* Deadlock detector hook. */
-        // add what you need here
         // (don't forget to mark things volatile as needed)
 };
 
