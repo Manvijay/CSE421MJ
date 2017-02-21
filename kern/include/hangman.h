@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000, 2001, 2002, 2003, 2004, 2005, 2008, 2009
+ * Copyright (c) 2015
  *	The President and Fellows of Harvard College.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -27,50 +27,58 @@
  * SUCH DAMAGE.
  */
 
-#ifndef _KERN_TEST161_H_
-#define _KERN_TEST161_H_
+#ifndef HANGMAN_H
+#define HANGMAN_H
 
-#define TEST161_SUCCESS 0
-#define TEST161_FAIL 1
+/*
+ * Simple deadlock detector. Enable with "options hangman" in the
+ * kernel config.
+ */
 
-#include <kern/secret.h>
+#include "opt-hangman.h"
 
-#ifdef _KERNEL
-#define __TEST161_PROGRESS_N(iter, mod) do { \
-	if (((iter) % mod) == 0) { \
-		kprintf("."); \
-	} \
-} while (0)
+#if OPT_HANGMAN
+
+struct hangman_actor {
+	const char *a_name;
+	const struct hangman_lockable *a_waiting;
+};
+
+struct hangman_lockable {
+	const char *l_name;
+	const struct hangman_actor *l_holding;
+};
+
+void hangman_wait(struct hangman_actor *a, struct hangman_lockable *l);
+void hangman_acquire(struct hangman_actor *a, struct hangman_lockable *l);
+void hangman_release(struct hangman_actor *a, struct hangman_lockable *l);
+
+#define HANGMAN_ACTOR(sym)	struct hangman_actor sym
+#define HANGMAN_LOCKABLE(sym)	struct hangman_lockable sym
+
+#define HANGMAN_ACTORINIT(a, n)	    ((a)->a_name = (n), (a)->a_waiting = NULL)
+#define HANGMAN_LOCKABLEINIT(l, n)  ((l)->l_name = (n), (l)->l_holding = NULL)
+
+#define HANGMAN_LOCKABLE_INITIALIZER	{ "spinlock", NULL }
+
+#define HANGMAN_WAIT(a, l)	hangman_wait(a, l)
+#define HANGMAN_ACQUIRE(a, l)	hangman_acquire(a, l)
+#define HANGMAN_RELEASE(a, l)	hangman_release(a, l)
+
 #else
-#include <stdio.h>
-#define __TEST161_PROGRESS_N(iter, mod) do { \
-	if (((iter) % mod) == 0) { \
-		printf("."); \
-	} \
-} while (0)
+
+#define HANGMAN_ACTOR(sym)
+#define HANGMAN_LOCKABLE(sym)
+
+#define HANGMAN_ACTORINIT(a, name)
+#define HANGMAN_LOCKABLEINIT(a, name)
+
+#define HANGMAN_LOCKABLE_INITIALIZER
+
+#define HANGMAN_WAIT(a, l)
+#define HANGMAN_ACQUIRE(a, l)
+#define HANGMAN_RELEASE(a, l)
+
 #endif
 
-// Always loud
-#define TEST161_LPROGRESS_N(iter, mod) __TEST161_PROGRESS_N(iter, mod)
-#define TEST161_LPROGRESS(iter) __TEST161_PROGRESS_N(iter, 100)
-
-// Depends on whether or not it's automated testing. Some tests are
-// quite verbose with useful information so these should just stay quiet.
-#ifdef SECRET_TESTING
-#define TEST161_TPROGRESS_N(iter, mod) __TEST161_PROGRESS_N(iter, mod)
-#define TEST161_TPROGRESS(iter) __TEST161_PROGRESS_N(iter, 100)
-#else
-#define TEST161_TPROGRESS_N(iter, mod)
-#define TEST161_TPROGRESS(iter)
-#endif
-
-int success(int, const char *, const char *);
-int secprintf(const char *secret, const char *msg, const char *name);
-int snsecprintf(size_t len, char *buffer, const char *secret, const char *msg, const char *name);
-int partial_credit(const char *secret, const char *name, int scored, int total);
-
-#ifdef _KERNEL
-void test161_bootstrap(void);
-#endif
-
-#endif /* _KERN_TEST161_H_ */
+#endif /* HANGMAN_H */
